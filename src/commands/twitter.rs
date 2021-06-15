@@ -1,24 +1,39 @@
 extern crate percent_encoding;
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use percent_encoding::utf8_percent_encode;
 
-const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+use super::{Command, FRAGMENT};
 
-pub fn construct_url(query: &str) -> String {
-    // fill in logic
-    if query == "tw" {
-        "https://twitter.com".to_string()
-    } else if &query[..4] == "tw @" {
-        construct_profile_url(&query[4..])
-    } else {
-        construct_search_url(&query[3..])
+pub struct Twitter;
+
+impl Command for Twitter {
+    fn get_name(&self) -> String {
+        "tw".to_string()
+    }
+
+    fn get_description(&self) -> String {
+        "Usage: tw [@profile|search] -> Go to twitter, a specific profile or search".to_string()
+    }
+
+    fn construct_url(&self, args: Option<Vec<&str>>) -> String {
+        if args == None {
+            return "https://twitter.com".to_string();
+        }
+
+        let query = args.unwrap().join(" ");
+
+        if query.starts_with("@") {
+            construct_profile_url(&query[1..])
+        } else {
+            construct_search_url(&query)
+        }
     }
 }
 
-pub fn construct_profile_url(profile: &str) -> String {
+fn construct_profile_url(profile: &str) -> String {
     format!("https://twitter.com/{}", profile)
 }
 
-pub fn construct_search_url(query: &str) -> String {
+fn construct_search_url(query: &str) -> String {
     let encoded_query = utf8_percent_encode(query, FRAGMENT).to_string();
     let search_url = format!("https://twitter.com/search?q={}", encoded_query);
 
@@ -31,34 +46,31 @@ mod tests {
 
     #[test]
     fn test_construct_url() {
-        let fake_query = "tw";
-        assert_eq!(construct_url(fake_query), "https://twitter.com");
+        assert_eq!(Twitter.construct_url(None), "https://twitter.com");
     }
 
     #[test]
     fn test_construct_url_query() {
-        let fake_query = "tw hello world";
         assert_eq!(
-            construct_url(fake_query),
+            Twitter.construct_url(Some(vec!["hello", "world"])),
             "https://twitter.com/search?q=hello%20world"
         );
     }
 
     #[test]
     fn test_construct_url_profile() {
-        let fake_query = "tw @fbOpenSource";
         assert_eq!(
-            construct_url(fake_query),
-            "https://twitter.com/fbOpenSource"
+            Twitter.construct_url(Some(vec!["@user"])),
+            "https://twitter.com/user"
         );
     }
 
     #[test]
     fn test_construct_profile_url() {
-        let fake_profile = "jsjoeio";
+        let fake_profile = "user";
         assert_eq!(
             construct_profile_url(fake_profile),
-            "https://twitter.com/jsjoeio"
+            "https://twitter.com/user"
         );
     }
 

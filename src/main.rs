@@ -8,7 +8,7 @@ mod parser;
 mod routes;
 
 pub fn rocket() -> Rocket<Build> {
-    rocket::build().mount("/", routes![routes::parse])
+    rocket::build().mount("/", routes![routes::parse, routes::list_all])
 }
 
 #[rocket::main]
